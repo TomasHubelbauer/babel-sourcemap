@@ -14,4 +14,4 @@ const presets = [
   "@babel/react"
 ];
 
-module.exports = { presets, sourceMaps: true };
+module.exports = { presets };

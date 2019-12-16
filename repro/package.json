@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "fs-extra": "^8.1.0",
+    "klaw": "^3.0.0",
+    "source-map": "^0.7.3",
+    "typescript": "^3.7.3"
+  }
+}

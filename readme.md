@@ -49,3 +49,9 @@ In the output:
 So, it appears that string literals which are used as JSX children are not getting
 mapped to their correct respective source locations, instead, they are mapped to the
 JSX element's tag name.
+
+## To-Do
+
+### Help resolve the GitHub issue
+
+https://github.com/babel/babel/issues/10869

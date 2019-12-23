@@ -55,3 +55,18 @@ JSX element's tag name.
 ### Help resolve the GitHub issue
 
 https://github.com/babel/babel/issues/10869
+
+### Develop a workaround in the meantime
+
+As per the new output, which displays all the generated positions, maps them
+back to the originals, derives the generated from the resolved originals and
+in process reveals that the source map doesn't have enough informations to
+map the symbols correctly, it seems that heuristics will have to be developed,
+because the source maps do not contain enough information.
+
+Maybe it will be possible find the order of the strings in the generated output
+and scan the source AST without the help of the source map (or using it as an
+aid and not a definitive source of truth) and have heuristics where all the
+string literals, as long as they are in the same order as the ones in the output
+(which originate from the source, so have `source` in the sourcemap - non-`null`
+location) are considered as translatable strings.

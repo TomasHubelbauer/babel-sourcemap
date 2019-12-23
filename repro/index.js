@@ -23,12 +23,15 @@ void async function () {
       continue;
     }
 
+    const sourceText = String(await fs.readFile(file.path));
     const sourceFile = ts.createSourceFile(
       file.path,
-      String(await fs.readFile(file.path)),
+      sourceText,
       ts.ScriptTarget.ES5, // tsconfig.json
       true
     );
+
+    const target = relative(process.cwd(), file.path);
 
     const nodes = [sourceFile];
     do {
@@ -37,15 +40,26 @@ void async function () {
       if (node.kind === ts.SyntaxKind.StringLiteral) {
         const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.pos);
         const map = sourceMap.originalPositionFor({ line: line + 1, column: character });
-        console.log(JSON.stringify(node.text));
-        let source = map.source || '';
-        if (source.startsWith('../')) {
-          source = source.slice('../'.length);
+        if (map.source === null) {
+          continue;
         }
 
-        console.log(`  source: ${source}:${map.line}:${map.column + 1}`);
-        console.log(`  target: ${relative(process.cwd(), file.path)}:${line + 1}:${character + 1}`);
+        console.log(`${JSON.stringify(node.text)} (${node.text.length})`);
+        const { line: lineEnd, character: characterEnd } = sourceFile.getLineAndCharacterOfPosition(node.end);
+        const mapEnd = sourceMap.originalPositionFor({ line: lineEnd + 1, column: characterEnd });
+        const source = map.source.startsWith('../') ? map.source.slice('../'.length) : map.source;
+        console.log(`  source: ${source}:${map.line}:${map.column + 1} - ${source}:${mapEnd.line}:${mapEnd.column + 1} | ${map.line !== mapEnd.line ? 'multiline' : mapEnd.column - map.column}`);
+        console.log(`  target: ${target}:${line + 1}:${character + 1} - ${target}:${lineEnd + 1}:${characterEnd + 1} | ${line !== lineEnd ? 'multiline' : characterEnd - character}`);
       }
     } while (nodes.length > 0);
+
+    const sourceLines = sourceText.split(/\n/g);
+    for (let line = 0; line < sourceLines.length; line++) {
+      for (let character = 0; character < sourceLines[line].length; character++) {
+        const original = sourceMap.originalPositionFor({ line: line + 1, column: character + 1 });
+        const generated = sourceMap.generatedPositionFor({ line: original.line, column: original.column, source: original.source });
+        console.log(`${target}:${line + 1}:${character + 1} | ${original.line}:${original.column} | ${generated.line}:${generated.column}`);
+      }
+    }
   }
 }()

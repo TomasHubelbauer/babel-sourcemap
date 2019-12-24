@@ -70,3 +70,11 @@ aid and not a definitive source of truth) and have heuristics where all the
 string literals, as long as they are in the same order as the ones in the output
 (which originate from the source, so have `source` in the sourcemap - non-`null`
 location) are considered as translatable strings.
+
+The algorithm:
+
+- Pull out string literals from the source using TSC
+- Pull out string literals from the target using TSC
+- Ignore string literals in target not in source (`use string` etc.)
+- Validate the remaining sets of literals match in count and order
+- Replace the string literals in the target with corresponding resource strings

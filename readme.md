@@ -52,6 +52,12 @@ So, it appears that string literals which are used as JSX children are not getti
 mapped to their correct respective source locations, instead, they are mapped to the
 JSX element's tag name.
 
+## Purpose
+
+This should help finish https://github.com/TomasHubelbauer/cra-ast-localize/
+which uses the source maps to figure out the string literals in JSX/TSX and
+replace them with calls to localization functions.
+
 ## To-Do
 
 ### Help resolve the Babel issue once they set up contributing on Windows

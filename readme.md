@@ -54,6 +54,11 @@ JSX element's tag name.
 
 ## To-Do
 
-### Help resolve the GitHub issue
+### Help resolve the Babel issue once they set up contributing on Windows
 
-https://github.com/babel/babel/issues/10869
+[Babel issue](https://github.com/babel/babel/issues/10869)
+
+[Windows blocker](https://github.com/babel/babel/issues/10889)
+
+I might also take a stab at it on macOS since I've migrated since this project
+was last active.

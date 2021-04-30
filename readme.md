@@ -65,3 +65,5 @@ replace them with calls to localization functions.
 [Babel issue](https://github.com/babel/babel/issues/10869)
 
 [Slack thread](https://babeljs.slack.com/archives/C062RC35M/p1619742006022600)
+
+[Similar PR](https://github.com/babel/babel/pull/12086/files)

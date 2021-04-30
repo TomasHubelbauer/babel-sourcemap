@@ -60,11 +60,6 @@ replace them with calls to localization functions.
 
 ## To-Do
 
-### Help resolve the Babel issue once they set up contributing on Windows
+### Attempt to contribute a fix for the source map JSX string literal issue
 
 [Babel issue](https://github.com/babel/babel/issues/10869)
-
-[Windows blocker](https://github.com/babel/babel/issues/10889)
-
-I might also take a stab at it on macOS since I've migrated since this project
-was last active.

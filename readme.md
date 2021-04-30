@@ -63,3 +63,5 @@ replace them with calls to localization functions.
 ### Attempt to contribute a fix for the source map JSX string literal issue
 
 [Babel issue](https://github.com/babel/babel/issues/10869)
+
+[Slack thread](https://babeljs.slack.com/archives/C062RC35M/p1619742006022600)

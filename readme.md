@@ -1,5 +1,7 @@
 # Babel Sourcemap Repro
 
+> Note: this should now be fixed: https://github.com/babel/babel/issues/10869
+
 [**WEB**](https://tomashubelbauer.github.io/babel-sourcemap)
 
 This repository demonstrates an issue with the Babel sourcemap generation.

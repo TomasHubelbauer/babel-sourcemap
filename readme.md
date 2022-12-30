@@ -1,12 +1,13 @@
 # Babel Sourcemap Repro
 
-> Note: this should now be fixed: https://github.com/babel/babel/issues/10869
-
-[**WEB**](https://tomashubelbauer.github.io/babel-sourcemap)
-
 This repository demonstrates an issue with the Babel sourcemap generation.
+I have reported this issue to Babel: https://github.com/babel/babel/issues/10869
 
-To run:
+I have run into this in https://github.com/TomasHubelbauer/cra-ast-localize
+which uses source maps to figure out the string literals in JSX/TSX and replace
+them with calls to localization functions.
+
+## Running
 
 ```sh
 cd repro
@@ -16,56 +17,78 @@ npm install
 npm start
 ```
 
-In the output:
+## Updating dependencies
 
 ```
-"div"
-  source: src/App.jsx:5:5
-  target: lib/App.js:13:39
-"App"
-  source: src/App.jsx:5:19
-  target: lib/App.js:14:15
-"h1"
-  source: src/App.jsx:6:7
-  target: lib/App.js:15:35
-"Welcome to my application!"
-  source: src/App.jsx:6:7
-  target: lib/App.js:15:46
-"This is my app!"
-  source: src/App.jsx:5:5
-  target: lib/App.js:15:77
-"strong"
-  source: src/App.jsx:8:7
-  target: lib/App.js:15:126
-"MINE."
-  source: src/App.jsx:8:7
-  target: lib/App.js:15:141
+npm install @babel/cli @babel/core @babel/preset-env @babel/preset-react
+cd repro
+npm install source-map typescript
 ```
 
-- `div` is mapped correctly
-- `App` is mapped correctly
-- `h1` is mapped correctly
-- `Welcome to my application!` is mapped to the `h1`
-- `This is my app!` is mapped to the `div`
-- `strong` is mapped correctly
-- `MINE.` is mapped to the `strong`
+## Assessing the output
 
-So, it appears that string literals which are used as JSX children are not getting
-mapped to their correct respective source locations, instead, they are mapped to the
-JSX element's tag name.
+The `ln:col` ranges are translated and printed such that they match the numbers
+shown in the caret position cell shows on the right of the VS Code status bar.
 
-## Purpose
+### Actual Output
 
-This should help finish https://github.com/TomasHubelbauer/cra-ast-localize/
-which uses the source maps to figure out the string literals in JSX/TSX and
-replace them with calls to localization functions.
+```
+App.js 10:16-10:20 > "test" < App.jsx 4:16-4:20
+App.js 12:16-12:20 > "App" < App.jsx 6:20-6:19
+App.js 13:60-13:87 > "Welcome to my application!" < App.jsx 7:8-7:36
+App.js 13:91-13:107 > "This is my app!" < App.jsx 7:43-9:6
+App.js 13:168-13:174 > "MINE." < App.jsx 9:8-9:19
+```
 
-## To-Do
+### Expected Output
 
-### Attempt to contribute a fix for the source map JSX string literal issue
+```
+App.js 10:16-10:20 > "test" < App.jsx 4:16-4:20
+App.js 12:16-12:20 > "App" < App.jsx 6:20-6:19
+App.js 13:60-13:87 > "Welcome to my application!" < App.jsx 7:8-7:36
+App.js 13:91-13:107 > "This is my app!" < App.jsx 7:43-9:6
+App.js 13:168-13:174 > "MINE." < App.jsx 9:8-9:19
+```
 
-[Babel issue](https://github.com/babel/babel/issues/10869)
+`App.js 10:16-10:20 > "test" < App.jsx 4:16-4:20` is mapped correctly.
+This is the only string literal which is not a JSX/TSX child.
+Other string literals which are be TSX/JSX node children are mapped incorrectly:
 
-[Slack thread](https://babeljs.slack.com/archives/C062RC35M/p1619742006022600)
+- `App.js 12:16-12:20 > "App" < App.jsx 6:20-6:19`
+  - `App.js` should be 12:17-12:20
+    - Start position is offset to the left by 1
+    - End position is correct
+  - `App.jsx` should be 6:21-6:24
+    - Start posiition is offset to the left by 1
+    - End position is completely bonkers
+  - This is a JSX/TSX attribute value not a text child
+- `App.js 13:60-13:87 > "Welcome to my application!" < App.jsx 7:8-7:36`
+  - `App.js` should be 13:61-13:87
+    - Start position is offset to the left by 1 (tag name length is 2)
+    - End position is correct
+  - `App.jsx` should be 7:11-7:37
+    - Start position is offset to the left by 3
+    - End position is offset to the left by 1
+  - This is a JSX/TSX text child not an attribute value
+- `App.js 13:91-13:107 > "This is my app!" < App.jsx 7:43-9:6`
+  - `App.js` should be 13:92-13:107
+    - Start position is offset to the left by 1
+    - End position is correct
+  - `App.jsx` should be 8:7-8:22
+    - The string literal's text doesn't contain leading and trailing whitespace
+    - The string literal's mapping does contain leading and trailing whitespace
+- `App.js 13:168-13:174 > "MINE." < App.jsx 9:8-9:19`
+  - `App.js` should be 13:169-13:174
+    - Start position is offset to the left by 1
+    - End position is offset to the left by 1
+  - `App.jsx` should be 9:15-9:20
+    - Start position is offset to the left by 7 (tag name length is 6)
+    - End position is offset to the left by 1
 
-[Similar PR](https://github.com/babel/babel/pull/12086/files)
+We see that:
+
+- Non-JSX/TSX string literals are mapped perfectly
+- JSX/TSX attribute values show incorrect end position
+- JSX/TSX tech childrens' positions are offset by varying amounts
+  It seems that tag name and whitespace play a role but I have not been able to
+  find a more precise pattern in the output data.

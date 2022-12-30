@@ -1,65 +1,61 @@
-const klaw = require('klaw');
-const fs = require('fs-extra');
-const sourcemap = require('source-map');
-const ts = require('typescript');
-const { relative } = require('path');
+import fs from 'fs';
+import sourcemap from 'source-map';
+import typescript from 'typescript';
 
-void async function () {
-  for await (const file of klaw('lib')) {
-    if (!file.stats.isFile()) {
-      continue;
-    }
+for (const path of await fs.promises.readdir('lib')) {
+  if (!path.endsWith('.js')) {
+    continue;
+  }
 
-    if (!file.path.endsWith('.js')) {
-      continue;
-    }
+  const sourceMap = await new sourcemap.SourceMapConsumer(await fs.promises.readFile(`lib/${path}.map`, 'utf-8'));
+  const file = typescript.createSourceFile(
+    path,
+    await fs.promises.readFile(`lib/${path}`, 'utf-8'),
+    typescript.ScriptTarget.ESNext,
+    /* setParentNodes: */ true,
+    typescript.ScriptKind.JS
+  );
 
-    let sourceMap;
-    try {
-      sourceMap = await new sourcemap.SourceMapConsumer(String(await fs.readFile(file.path + '.map')));
-    }
-    catch (error) {
-      // Ignore files without sourcemaps
-      continue;
-    }
+  const nodes = [file];
+  do {
+    const node = nodes.shift();
+    nodes.unshift(...node.getChildren());
+    if (node.kind === typescript.SyntaxKind.StringLiteral) {
+      const { line: lineStart, character: characterStart } = file.getLineAndCharacterOfPosition(node.pos);
+      const { line: lineEnd, character: characterEnd } = file.getLineAndCharacterOfPosition(node.end);
 
-    const sourceText = String(await fs.readFile(file.path));
-    const sourceFile = ts.createSourceFile(
-      file.path,
-      sourceText,
-      ts.ScriptTarget.ES5, // tsconfig.json
-      true
-    );
-
-    const target = relative(process.cwd(), file.path);
-
-    const nodes = [sourceFile];
-    do {
-      const node = nodes.shift();
-      nodes.unshift(...node.getChildren());
-      if (node.kind === ts.SyntaxKind.StringLiteral) {
-        const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.pos);
-        const map = sourceMap.originalPositionFor({ line: line + 1, column: character });
-        if (map.source === null) {
-          continue;
-        }
-
-        console.log(`${JSON.stringify(node.text)} (${node.text.length})`);
-        const { line: lineEnd, character: characterEnd } = sourceFile.getLineAndCharacterOfPosition(node.end);
-        const mapEnd = sourceMap.originalPositionFor({ line: lineEnd + 1, column: characterEnd });
-        const source = map.source.startsWith('../') ? map.source.slice('../'.length) : map.source;
-        console.log(`  source: ${source}:${map.line}:${map.column + 1} - ${source}:${mapEnd.line}:${mapEnd.column + 1} | ${map.line !== mapEnd.line ? 'multiline' : mapEnd.column - map.column}`);
-        console.log(`  target: ${target}:${line + 1}:${character + 1} - ${target}:${lineEnd + 1}:${characterEnd + 1} | ${line !== lineEnd ? 'multiline' : characterEnd - character}`);
+      const startMap = sourceMap.originalPositionFor({ line: lineStart + 1, column: characterStart });
+      const endMap = sourceMap.originalPositionFor({ line: lineEnd + 1, column: characterEnd });
+      
+      if (!startMap.source || !endMap.source) {
+        // Skip extra non-user literals like `use strict` and `__esModule`
+        continue;
       }
-    } while (nodes.length > 0);
 
-    const sourceLines = sourceText.split(/\n/g);
-    for (let line = 0; line < sourceLines.length; line++) {
-      for (let character = 0; character < sourceLines[line].length; character++) {
-        const original = sourceMap.originalPositionFor({ line: line + 1, column: character + 1 });
-        const generated = sourceMap.generatedPositionFor({ line: original.line, column: original.column, source: original.source });
-        console.log(`${target}:${line + 1}:${character + 1} | ${original.line}:${original.column} | ${generated.line}:${generated.column}`);
+      if (startMap.line === endMap.line && startMap.column === endMap.column) {
+        // Skip mis-mapped non-user literals like `import React from "react"`
+        continue;
       }
+
+      const jsPath = path;
+      const jsxPath = startMap.source.slice(startMap.source.lastIndexOf('/') + 1);
+
+      // Note that positions are translated and printed to match the values VS
+      // Code shows caret positions in the `Ln, Col` cell on the right side of
+      // its status bar
+
+      // TODO: Fix offset indices of string literals which are in JSX/TSX nodes
+      const jsVsCodeLineStart = lineStart + 1;
+      const jsVsCodeCharacterStart = characterStart + 2;
+      const jsVsCodeLineEnd = lineEnd + 1;
+      const jsVsCodeCharacterEnd = characterEnd;
+      const jsxVsCodeLineStart = startMap.line;
+      const jsxVsCodeCharacterStart = startMap.column + 2;
+      const jsxVsCodeLineEnd = endMap.line;
+      const jsxVsCodeCharacterEnd = endMap.column;
+
+      console.log(`${jsPath} ${jsVsCodeLineStart}:${jsVsCodeCharacterStart}-${jsVsCodeLineEnd}:${jsVsCodeCharacterEnd} > "${node.text}" < ${jsxPath} ${jsxVsCodeLineStart}:${jsxVsCodeCharacterStart}-${jsxVsCodeLineEnd}:${jsxVsCodeCharacterEnd}`);
     }
   }
-}()
+  while (nodes.length > 0);
+}

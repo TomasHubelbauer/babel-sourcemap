@@ -4,12 +4,9 @@
     "poststart": "node repro/index.js"
   },
   "dependencies": {
-    "@babel/cli": "^7.7.5",
-    "@babel/core": "^7.7.5",
-    "@babel/polyfill": "^7.7.0",
-    "@babel/preset-env": "^7.7.6",
-    "@babel/preset-react": "^7.7.4",
-    "react": "^16.12.0",
-    "react-dom": "^16.12.0"
+    "@babel/cli": "^7.20.7",
+    "@babel/core": "^7.20.7",
+    "@babel/preset-env": "^7.20.2",
+    "@babel/preset-react": "^7.18.6"
   }
 }

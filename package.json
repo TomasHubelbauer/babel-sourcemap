@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "npx babel src -s true --out-dir lib",
-    "poststart": "node repro/index.js"
+    "poststart": "node demo"
   },
   "dependencies": {
     "@babel/cli": "^7.20.7",
